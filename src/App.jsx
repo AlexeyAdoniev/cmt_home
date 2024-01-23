@@ -1,74 +1,10 @@
 /* eslint-disable react/prop-types */
 import { useEffect, useState } from 'react';
 import { Checkbox, Select, InputNumber, Input } from 'antd'
-// import { EyeInvisibleOutlined, EyeOutlined } from '@ant-design/icons'
+import { EditOutlined, SaveOutlined } from '@ant-design/icons'
 import './App.css';
 
-const columns = [
-	{
-		id: '1',
-		ordinalNo: 1,
-		title: 'Name',
-		type: 'string',
-		width: 100
-	},
-	{
-		id: '2',
-		ordinalNo: 2,
-		title: 'Birth year',
-		type: 'number',
-		width: 100
-	},
-	{
-		id: '3',
-		ordinalNo: 3,
-		title: 'Checked',
-		type: 'boolean',
-		width: 100
-	},
-	{
-		id: '4',
-		ordinalNo: 4,
-		title: 'Status',
-		type: 'Object',
-		width: 100
-	}
-]
-
-
-const data = [
-	{
-		id: '1',
-		'1': 'Alex Teisheira',
-		'2': 1993,
-		'3': false,
-		'4': {
-			selected: 0,
-			options: ['Single', 'Married', 'Divorsed']
-		},
-	},
-	{
-		id: '2',
-		'1': 'Ibragim Abema',
-		'2': 1987,
-		'3': true,
-		'4': {
-			selected: 1,
-			options: ['Single', 'Married', 'Divorsed']
-		}
-	}
-];
-
-
-// const validate = (val, type) => {
-
-// 	switch (type) {
-
-// 		default:
-// 			return true;
-// 	}
-// }
-
+import { isNumeric } from './utils';
 
 
 function TableHeader({ col, shownColumns }) {
@@ -84,20 +20,32 @@ function TableHeader({ col, shownColumns }) {
 	</th>
 }
 
-function App() {
+function App({ tableData }) {
+
+	const { columns, data } = tableData
+
+	const sorted = columns.sort((a, b) => a.ordinalNo - b.ordinalNo);
 
 	const [table, setTable] = useState({
-		columns: columns.sort((a, b) => a.ordinalNo - b.ordinalNo),
+		columns: sorted,
 		data
 	})
+
+
 	const [updateCell, setUpdateCell] = useState('');
 	const [shownColumns, setShownColumns] = useState(table.columns.map(({ id }) => id));
+	const DEFAULT_SHOWN_ROWS = table.data.map(({ id }) => id);
+	const [shownRows, setShownRows] = useState(DEFAULT_SHOWN_ROWS);
+	const [searchInput, setSearch] = useState('');
 
-	// useEffect(() => {
 
-	// }, [table])
+	const renderHeaders = () =>
 
-
+		table.columns.map((col, i) => (
+			<TableHeader key={`header-${i}`}
+				col={col}
+				shownColumns={shownColumns} />
+		));
 
 	//render idle
 	const renderIdle = (value) => {
@@ -170,18 +118,6 @@ function App() {
 	}
 
 
-
-
-
-	const renderHeaders = () =>
-
-		table.columns.map((col, i) => (
-			<TableHeader key={`header-${i}`}
-				col={col}
-				shownColumns={shownColumns} />
-		));
-
-
 	const renderRows = () => {
 		return table.data.map((row, rowIndex) => {
 
@@ -189,13 +125,16 @@ function App() {
 				const cellId = `${rowIndex}-${columnId}`;
 				const hidden = !shownColumns.includes(columnId);
 				const update = updateCell === cellId;
-				return <td className={`${hidden ? 'hidden' : ''}`} onClick={() => setUpdateCell(cellId)} key={`cell-${cellId}`}>
+				return <td className={`${hidden ? 'hidden' : ''}`} key={`cell-${cellId}`}>
 					{update ? renderUpdate(row.id, row, columnId, setTable) : renderIdle(row[columnId])}
+					{update ? <SaveOutlined onClick={() => setUpdateCell('')} /> : <EditOutlined onClick={() => setUpdateCell(cellId)} />}
 				</td>
 			})
 
+
+
 			return <tr key={`row-${rowIndex}`}>
-				{cells}
+				{shownRows.includes(row.id) ? cells : []}
 			</tr>
 
 
@@ -203,11 +142,32 @@ function App() {
 		})
 	}
 
-	//const conlumnIds = table.columns.filter((col) => !hiddenColumns.includes(col.id)).map(({ id }) => id);
 
-	const columnFilterHandler = (e) => {
-		setShownColumns(e)
-	}
+	useEffect(() => {
+		if (searchInput === '') {
+			return void setShownRows(DEFAULT_SHOWN_ROWS);
+		}
+
+		//const numeric = isNumeric(searchInput);
+
+		const filtred = table.data.filter(row => {
+			let found = false;
+			Object.entries(row).forEach(([key, value]) => {
+				if (key !== 'id' && typeof value === 'string') {
+					const reg = new RegExp(searchInput, 'gi')
+					if (value.match(reg)) {
+						found = true;
+					}
+				}
+			})
+
+			return found
+		})
+
+		setShownRows(filtred.map(({ id }) => id));
+
+	}, [searchInput, table])
+
 
 	return (
 		<>
@@ -217,12 +177,15 @@ function App() {
 				style={{ width: '100%' }}
 				placeholder="Please select shown fields"
 				value={shownColumns}
-				onChange={columnFilterHandler}
+				onChange={(e) => {
+					setShownColumns(e)
+				}}
 				options={table.columns.map(column => ({
 					label: column.title,
 					value: column.id
 				}))}
 			/>
+			<Input value={searchInput} onChange={e => setSearch(e.target.value)} />
 			<table>
 				<thead>
 					<tr>
@@ -236,3 +199,6 @@ function App() {
 }
 
 export default App;
+
+// 1. in table tag should be just 2 components
+// 2. refactor and optimize serach function
