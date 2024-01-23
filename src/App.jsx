@@ -1,6 +1,7 @@
 /* eslint-disable react/prop-types */
 import { useEffect, useState } from 'react';
 import { Checkbox, Select, InputNumber, Input } from 'antd'
+// import { EyeInvisibleOutlined, EyeOutlined } from '@ant-design/icons'
 import './App.css';
 
 const columns = [
@@ -70,11 +71,14 @@ const data = [
 
 
 
-function TableHeader({ col }) {
+function TableHeader({ col, shownColumns }) {
 
+
+	const hidden = !shownColumns.includes(col.id);
 
 	return <th
-		className={`table-header`}
+		className={`table-header ${hidden ? 'hidden' : ''}`}
+
 	>
 		{col.title}
 	</th>
@@ -86,7 +90,8 @@ function App() {
 		columns: columns.sort((a, b) => a.ordinalNo - b.ordinalNo),
 		data
 	})
-	const [editCell, setEditCell] = useState('');
+	const [updateCell, setUpdateCell] = useState('');
+	const [shownColumns, setShownColumns] = useState(table.columns.map(({ id }) => id));
 
 	// useEffect(() => {
 
@@ -109,10 +114,10 @@ function App() {
 		}
 	}
 
-	//render ediatable
-	const renderUpdate = (id, row, key, setTable) => {
+	//render updateable
+	const renderUpdate = (id, row, columnId, setTable) => {
 
-		const value = row[key];
+		const value = row[columnId];
 
 		const handleEdit = (updated) => {
 
@@ -124,7 +129,7 @@ function App() {
 					...table.data.slice(0, idxToEdit),
 					{
 						...table.data[idxToEdit],
-						[key]: updated
+						[columnId]: updated
 					},
 					...table.data.slice(idxToEdit + 1),
 				]
@@ -171,24 +176,23 @@ function App() {
 	const renderHeaders = () =>
 
 		table.columns.map((col, i) => (
-			<TableHeader key={`header-${i}`} col={col} />
+			<TableHeader key={`header-${i}`}
+				col={col}
+				shownColumns={shownColumns} />
 		));
 
 
 	const renderRows = () => {
 		return table.data.map((row, rowIndex) => {
 
-			const cells = [];
-
-			for (const column of table.columns) {
-				const key = Object.keys(row).find(key => key === column.id);
-				const cellId = `${rowIndex}-${key}`;
-				const updated = editCell === cellId;
-				cells.push(<td onClick={() => setEditCell(cellId)} key={`cell-${cellId}`}>
-					{updated ? renderUpdate(row.id, row, key, setTable) : renderIdle(row[key])}
-
-				</td>)
-			}
+			const cells = table.columns.map(({ id: columnId }) => {
+				const cellId = `${rowIndex}-${columnId}`;
+				const hidden = !shownColumns.includes(columnId);
+				const update = updateCell === cellId;
+				return <td className={`${hidden ? 'hidden' : ''}`} onClick={() => setUpdateCell(cellId)} key={`cell-${cellId}`}>
+					{update ? renderUpdate(row.id, row, columnId, setTable) : renderIdle(row[columnId])}
+				</td>
+			})
 
 			return <tr key={`row-${rowIndex}`}>
 				{cells}
@@ -199,8 +203,26 @@ function App() {
 		})
 	}
 
+	//const conlumnIds = table.columns.filter((col) => !hiddenColumns.includes(col.id)).map(({ id }) => id);
+
+	const columnFilterHandler = (e) => {
+		setShownColumns(e)
+	}
+
 	return (
 		<>
+			<Select
+				mode="multiple"
+				allowClear
+				style={{ width: '100%' }}
+				placeholder="Please select shown fields"
+				value={shownColumns}
+				onChange={columnFilterHandler}
+				options={table.columns.map(column => ({
+					label: column.title,
+					value: column.id
+				}))}
+			/>
 			<table>
 				<thead>
 					<tr>
