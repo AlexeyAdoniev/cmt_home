@@ -1,10 +1,14 @@
 /* eslint-disable react/prop-types */
 import { useEffect, useState } from 'react';
 import { Checkbox, Select, InputNumber, Input } from 'antd'
-import { EditOutlined, SaveOutlined } from '@ant-design/icons'
+import { EditOutlined, SaveOutlined, GroupOutlined } from '@ant-design/icons'
 import './App.css';
 
-import { isNumeric } from './utils';
+
+import tableData from './data.jsx'
+
+
+//import { isNumeric } from './utils';
 
 
 function TableHeader({ col, shownColumns }) {
@@ -17,10 +21,97 @@ function TableHeader({ col, shownColumns }) {
 
 	>
 		{col.title}
+		<GroupOutlined />
 	</th>
 }
 
-function App({ tableData }) {
+function App() {
+
+
+	const { columns, data } = tableData
+
+	const [shownColumns, setShownColumns] = useState(columns.map(({ id }) => id));
+	const DEFAULT_SHOWN_ROWS = data.map(({ id }) => id);
+	const [shownRows, setShownRows] = useState(DEFAULT_SHOWN_ROWS);
+	const [searchInput, setSearch] = useState('');
+	const [groups, setGroups] = useState({
+		'column': '2',
+	})
+
+
+	const renderHeaders = () => <thead>
+		<tr>
+			{
+				columns.map((col, i) => (
+					<TableHeader key={`header-${i}`}
+						col={col}
+						shownColumns={shownColumns} />
+				))
+			}
+		</tr>
+	</thead>
+
+
+
+
+
+	useEffect(() => {
+		if (searchInput === '') {
+			return void setShownRows(DEFAULT_SHOWN_ROWS);
+		}
+
+		//const numeric = isNumeric(searchInput);
+
+		const filtred = data.filter(row => {
+			let found = false;
+			Object.entries(row).forEach(([key, value]) => {
+				if (key !== 'id' && typeof value === 'string') {
+					const reg = new RegExp(searchInput, 'gi')
+					if (value.match(reg)) {
+						found = true;
+					}
+				}
+			})
+
+			return found
+		})
+
+		setShownRows(filtred.map(({ id }) => id));
+
+	}, [searchInput, data])
+
+
+	return (
+		<>
+			<Select
+				mode="multiple"
+				allowClear
+				style={{ width: '100%' }}
+				placeholder="Please select shown fields"
+				value={shownColumns}
+				onChange={(e) => {
+					setShownColumns(e)
+				}}
+				options={columns.map(column => ({
+					label: column.title,
+					value: column.id
+				}))}
+			/>
+			<Input value={searchInput} onChange={e => setSearch(e.target.value)} />
+			<Table tableData={tableData} shownColumns={shownColumns} shownRows={shownRows} groups={groups}>
+				{renderHeaders()}
+			</Table>
+		</>
+	);
+}
+
+const Table = ({
+	children,
+	tableData,
+	shownColumns,
+	shownRows,
+	groups = {},
+}) => {
 
 	const { columns, data } = tableData
 
@@ -33,19 +124,6 @@ function App({ tableData }) {
 
 
 	const [updateCell, setUpdateCell] = useState('');
-	const [shownColumns, setShownColumns] = useState(table.columns.map(({ id }) => id));
-	const DEFAULT_SHOWN_ROWS = table.data.map(({ id }) => id);
-	const [shownRows, setShownRows] = useState(DEFAULT_SHOWN_ROWS);
-	const [searchInput, setSearch] = useState('');
-
-
-	const renderHeaders = () =>
-
-		table.columns.map((col, i) => (
-			<TableHeader key={`header-${i}`}
-				col={col}
-				shownColumns={shownColumns} />
-		));
 
 	//render idle
 	const renderIdle = (value) => {
@@ -119,6 +197,21 @@ function App({ tableData }) {
 
 
 	const renderRows = () => {
+
+		if (groups.column) {
+			const groupKeys = Array.from(new Set(data.map(row => row[groups.column])));
+
+			return groupKeys.map((group, groupIndex) => {
+				const groupData = table.data.filter(row => row[groups.column] === group);
+				return <tr key={`group-${groupIndex}`}>
+					<td colSpan="5">
+						<Table tableData={{ columns, data: groupData }} shownColumns={shownColumns} shownRows={shownRows} />
+					</td>
+				</tr>
+			})
+		}
+
+
 		return table.data.map((row, rowIndex) => {
 
 			const cells = table.columns.map(({ id: columnId }) => {
@@ -132,70 +225,20 @@ function App({ tableData }) {
 			})
 
 
-
 			return <tr key={`row-${rowIndex}`}>
 				{shownRows.includes(row.id) ? cells : []}
 			</tr>
-
-
 
 		})
 	}
 
 
-	useEffect(() => {
-		if (searchInput === '') {
-			return void setShownRows(DEFAULT_SHOWN_ROWS);
-		}
-
-		//const numeric = isNumeric(searchInput);
-
-		const filtred = table.data.filter(row => {
-			let found = false;
-			Object.entries(row).forEach(([key, value]) => {
-				if (key !== 'id' && typeof value === 'string') {
-					const reg = new RegExp(searchInput, 'gi')
-					if (value.match(reg)) {
-						found = true;
-					}
-				}
-			})
-
-			return found
-		})
-
-		setShownRows(filtred.map(({ id }) => id));
-
-	}, [searchInput, table])
-
-
-	return (
-		<>
-			<Select
-				mode="multiple"
-				allowClear
-				style={{ width: '100%' }}
-				placeholder="Please select shown fields"
-				value={shownColumns}
-				onChange={(e) => {
-					setShownColumns(e)
-				}}
-				options={table.columns.map(column => ({
-					label: column.title,
-					value: column.id
-				}))}
-			/>
-			<Input value={searchInput} onChange={e => setSearch(e.target.value)} />
-			<table>
-				<thead>
-					<tr>
-						{renderHeaders()}
-					</tr>
-				</thead>
-				<tbody>{renderRows()}</tbody>
-			</table>
-		</>
-	);
+	return <table>
+		{children}
+		<tbody>
+			{renderRows()}
+		</tbody>
+	</table>
 }
 
 export default App;

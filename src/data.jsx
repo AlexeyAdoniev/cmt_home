@@ -1,3 +1,4 @@
+/* prettier-ignore */
 const columns = [
 	{
 		id: '1',
@@ -32,21 +33,31 @@ const columns = [
 const data = [
 	{
 		id: '1',
-		1: 'Alex Teisheira',
-		2: 1993,
-		3: false,
-		4: {
+		"1": 'Alex Teisheira',
+		"2": 1993,
+		"3": false,
+		"4": {
 			selected: 0,
 			options: ['Single', 'Married', 'Divorsed'],
 		},
 	},
 	{
 		id: '2',
-		1: 'Ibragim Abema',
-		2: 1987,
-		3: true,
-		4: {
+		"1": 'Ibragim Abema',
+		"2": 1987,
+		"3": true,
+		"4": {
 			selected: 1,
+			options: ['Single', 'Married', 'Divorsed'],
+		},
+	},
+	{
+		id: '3',
+		"1": 'Vasko de Gama',
+		"2": 1987,
+		"3": true,
+		"4": {
+			selected: 2,
 			options: ['Single', 'Married', 'Divorsed'],
 		},
 	},

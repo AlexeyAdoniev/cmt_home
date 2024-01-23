@@ -18,15 +18,25 @@
 	filter: drop-shadow(0 0 2em #61dafbaa);
 }
 
+table {
+	width: 100%;
+}
+
 table td {
 	width: 150px;
+}
+
+table td.jufi {
+	display: block;
+	width: 99.9%;
+	clear: both;
 }
 
 .hidden {
 	display: none;
 }
 
-table .hide-column {
+table th svg {
 	cursor: pointer;
 }
 
