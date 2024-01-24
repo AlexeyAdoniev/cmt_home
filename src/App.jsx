@@ -1,55 +1,59 @@
 /* eslint-disable react/prop-types */
 import { useEffect, useState } from 'react';
-import { Checkbox, Select, InputNumber, Input } from 'antd'
-import { EditOutlined, SaveOutlined, GroupOutlined } from '@ant-design/icons'
+import { Checkbox, Select, InputNumber, Input, Flex } from 'antd'
+import { EditOutlined, SaveOutlined, GroupOutlined, UngroupOutlined, CaretUpOutlined, CaretDownOutlined } from '@ant-design/icons'
 import './App.css';
 
 
-import tableData from './data.jsx'
+import tableData from './data.js'
+import { EMPTY_TABLE } from './config.js';
 
 
 //import { isNumeric } from './utils';
 
 
-function TableHeader({ col, shownColumns }) {
 
 
-	const hidden = !shownColumns.includes(col.id);
+const TableHeader = ({ columns, shownColumns, groups, setGroups }) => <thead>
+	<tr>
+		{
+			columns.map(({ id, title, width }, i) => {
 
-	return <th
-		className={`table-header ${hidden ? 'hidden' : ''}`}
+				const hidden = !shownColumns.includes(id);
 
-	>
-		{col.title}
-		<GroupOutlined />
-	</th>
-}
+				const groupHandler = () => setGroups({ column: id })
+				const ungroupHandler = () => setGroups({})
+
+				return <th
+					key={`Table-header-${i}`}
+					width={width}
+					className={`table-header ${hidden ? 'hidden' : ''}`}
+
+				>
+					{title}
+					{groups.column === id ?
+
+						<UngroupOutlined onClick={ungroupHandler} />
+						: <GroupOutlined onClick={groupHandler} />}
+
+				</th>
+			})
+		}
+	</tr>
+</thead>
+
+
 
 function App() {
 
-
+	tableData.columns = tableData.columns.sort((a, b) => a.ordinalNo - b.ordinalNo);
 	const { columns, data } = tableData
 
 	const [shownColumns, setShownColumns] = useState(columns.map(({ id }) => id));
 	const DEFAULT_SHOWN_ROWS = data.map(({ id }) => id);
 	const [shownRows, setShownRows] = useState(DEFAULT_SHOWN_ROWS);
 	const [searchInput, setSearch] = useState('');
-	const [groups, setGroups] = useState({
-		'column': '2',
-	})
-
-
-	const renderHeaders = () => <thead>
-		<tr>
-			{
-				columns.map((col, i) => (
-					<TableHeader key={`header-${i}`}
-						col={col}
-						shownColumns={shownColumns} />
-				))
-			}
-		</tr>
-	</thead>
+	const [groups, setGroups] = useState({})
 
 
 
@@ -83,23 +87,30 @@ function App() {
 
 	return (
 		<>
-			<Select
-				mode="multiple"
-				allowClear
-				style={{ width: '100%' }}
-				placeholder="Please select shown fields"
-				value={shownColumns}
-				onChange={(e) => {
-					setShownColumns(e)
-				}}
-				options={columns.map(column => ({
-					label: column.title,
-					value: column.id
-				}))}
-			/>
-			<Input value={searchInput} onChange={e => setSearch(e.target.value)} />
+			<Flex className="select-wrapper" >
+				<span>Show fields</span>
+				<Select
+					mode="multiple"
+					allowClear
+					disabled={Boolean(groups.column)}
+					style={{ minWidth: '200px' }}
+					placeholder="Please select shown fields"
+					value={shownColumns}
+					onChange={(e) => {
+						setShownColumns(e)
+					}}
+					options={columns.map(column => ({
+						label: column.title,
+						value: column.id
+					}))}
+				/>
+			</Flex>
+			<Flex className="search-wrapper" >
+				<span>Search</span>
+				<Input value={searchInput} onChange={e => setSearch(e.target.value)} />
+			</Flex>
 			<Table tableData={tableData} shownColumns={shownColumns} shownRows={shownRows} groups={groups}>
-				{renderHeaders()}
+				<TableHeader columns={columns} shownColumns={shownColumns} groups={groups} setGroups={setGroups} />
 			</Table>
 		</>
 	);
@@ -110,20 +121,24 @@ const Table = ({
 	tableData,
 	shownColumns,
 	shownRows,
+	isChild = false,
 	groups = {},
 }) => {
 
-	const { columns, data } = tableData
 
-	const sorted = columns.sort((a, b) => a.ordinalNo - b.ordinalNo);
-
-	const [table, setTable] = useState({
-		columns: sorted,
-		data
-	})
-
-
+	const [table, setTable] = useState(EMPTY_TABLE);
 	const [updateCell, setUpdateCell] = useState('');
+	// const []
+	const { columns, data } = table
+
+	useEffect(() => {
+		setTable(() => tableData)
+	}, [tableData])
+
+
+	// const toggleGroupShow = (group) => {
+
+	// }
 
 	//render idle
 	const renderIdle = (value) => {
@@ -141,7 +156,7 @@ const Table = ({
 	}
 
 	//render updateable
-	const renderUpdate = (id, row, columnId, setTable) => {
+	const renderUpdate = (id, row, columnId) => {
 
 		const value = row[columnId];
 
@@ -160,8 +175,6 @@ const Table = ({
 					...table.data.slice(idxToEdit + 1),
 				]
 			})
-
-
 		}
 
 
@@ -177,7 +190,9 @@ const Table = ({
 					value,
 					label: value
 				}))
+
 				const seleted = options[value.selected].label;
+
 				return <Select value={seleted} style={{ width: 100 }} options={options} onChange={(e) => {
 					handleEdit({
 						selected: value.options.findIndex(option => option === e),
@@ -190,7 +205,7 @@ const Table = ({
 			}
 
 			default:
-				return <Input value={value} onChange={(e) => handleEdit(e.target.value)} />
+				return <Input className='text-input' value={value} onChange={(e) => handleEdit(e.target.value)} />
 		}
 
 	}
@@ -198,14 +213,43 @@ const Table = ({
 
 	const renderRows = () => {
 
+		// Group mode recursive call
 		if (groups.column) {
 			const groupKeys = Array.from(new Set(data.map(row => row[groups.column])));
 
-			return groupKeys.map((group, groupIndex) => {
-				const groupData = table.data.filter(row => row[groups.column] === group);
+			return groupKeys.map((groupKey, groupIndex) => {
+
+				const groupData = table.data.filter(row => row[groups.column] === groupKey);
+
+				const Header = () => {
+
+
+					return <thead className='group-header'>
+						<tr>
+
+							{
+								columns.map(({ id, width }, i) => <th
+									key={`Table-group-header-${groupIndex}-${i}`}
+
+									width={width}
+								>
+
+									{id === groups.column ? <div className='group-key-wrapper'>{groupKey}<CaretUpOutlined onClick={() => toggleGroupShow(groupIndex)} /></div> : ''}
+
+									<div>{id === '1' ? `${groupData.length}/${data.length}` : ''}</div>
+								</th>
+								)
+							}
+
+						</tr>
+					</thead>
+				}
+
 				return <tr key={`group-${groupIndex}`}>
-					<td colSpan="5">
-						<Table tableData={{ columns, data: groupData }} shownColumns={shownColumns} shownRows={shownRows} />
+					<td colSpan={columns.length}>
+						<Table tableData={{ columns, data: groupData }} shownColumns={shownColumns} shownRows={shownRows} isChild={true}>
+							<Header />
+						</Table>
 					</td>
 				</tr>
 			})
@@ -214,13 +258,13 @@ const Table = ({
 
 		return table.data.map((row, rowIndex) => {
 
-			const cells = table.columns.map(({ id: columnId }) => {
+			const cells = table.columns.map(({ id: columnId, width }) => {
 				const cellId = `${rowIndex}-${columnId}`;
 				const hidden = !shownColumns.includes(columnId);
 				const update = updateCell === cellId;
-				return <td className={`${hidden ? 'hidden' : ''}`} key={`cell-${cellId}`}>
-					{update ? renderUpdate(row.id, row, columnId, setTable) : renderIdle(row[columnId])}
-					{update ? <SaveOutlined onClick={() => setUpdateCell('')} /> : <EditOutlined onClick={() => setUpdateCell(cellId)} />}
+				return <td width={width} className={`table-cell ${hidden ? 'hidden' : ''}`} key={`cell-${cellId}`}>
+					{update ? renderUpdate(row.id, row, columnId) : renderIdle(row[columnId])}
+					{!isChild && (update ? <SaveOutlined onClick={() => setUpdateCell('')} /> : <EditOutlined onClick={() => setUpdateCell(cellId)} />)}
 				</td>
 			})
 
@@ -228,12 +272,13 @@ const Table = ({
 			return <tr key={`row-${rowIndex}`}>
 				{shownRows.includes(row.id) ? cells : []}
 			</tr>
-
 		})
 	}
 
 
-	return <table>
+
+
+	return <table >
 		{children}
 		<tbody>
 			{renderRows()}

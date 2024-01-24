@@ -20,24 +20,133 @@
 
 table {
 	width: 100%;
+	border-collapse: collapse;
+	border: 1px solid rgb(163, 161, 163);
+	margin-top: 20px;
+	background: #353535;
+	color: white;
 }
 
-table td {
-	width: 150px;
+table thead th {
+	padding: 10px 0;
 }
 
-table td.jufi {
-	display: block;
-	width: 99.9%;
-	clear: both;
+table table {
+	border: none;
+	margin-top: 0;
+}
+
+table thead.group-header {
+	background-color: rgb(35, 36, 36);
+}
+
+table thead.group-header > tr {
+	transform: scale(1);
+}
+
+table tr {
+	border-bottom: none;
+	border-bottom: 1.5px solid rgb(161, 160, 160);
+}
+
+table table tr {
+	border-bottom: 1px solid rgb(161, 160, 160);
+	padding: 5px 0 5px 0;
+}
+
+table table tr:last-child {
+	border-bottom: none;
 }
 
 .hidden {
 	display: none;
 }
 
+table tr td,
+table tr th {
+	/* border-right: 1px solid rgb(114, 113, 113); */
+}
+
+table table tr td,
+.group-header th {
+	padding-left: 20px;
+}
+
+table tr td:last-of-type {
+	border-right: none;
+}
+
 table th svg {
 	cursor: pointer;
+}
+
+th.group-qnty {
+	position: absolute;
+	width: 10px;
+	height: 10px;
+	left: 0;
+	top: 0;
+	background: red;
+}
+
+.table-header .anticon {
+	margin-left: 10px;
+}
+
+.text-input {
+	width: 120px;
+}
+
+td.table-cell,
+th.table-header,
+.group-header th {
+	text-align: left;
+}
+
+td.table-cell,
+th.table-header {
+	padding-left: 20px;
+}
+
+td.table-cell .anticon {
+	margin-left: 4px;
+}
+
+.search-wrapper {
+	margin: 20px 0;
+	align-items: center;
+}
+
+.search-wrapper input {
+	width: 300px;
+	margin-left: 30px;
+}
+
+.select-wrapper {
+	align-items: center;
+}
+
+.select-wrapper .ant-select {
+	margin-left: 30px;
+	/* width: 300px; */
+}
+
+th.group-fold {
+	position: absolute;
+	right: 0;
+	top: 0;
+	width: 10px;
+	height: 10px;
+	background: red;
+}
+
+.group-key-wrapper {
+	display: flex;
+	align-items: center;
+}
+
+.group-key-wrapper svg {
+	margin-left: 10px;
 }
 
 @keyframes logo-spin {
