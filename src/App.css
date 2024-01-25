@@ -1,6 +1,6 @@
 #root {
 	max-width: 1280px;
-	margin: 0 auto;
+	margin: 20px auto;
 
 	text-align: center;
 }
@@ -123,7 +123,7 @@ td.table-cell .anticon {
 
 .search-wrapper input {
 	width: 300px;
-	margin-left: 30px;
+	margin-right: 20px;
 }
 
 .select-wrapper {

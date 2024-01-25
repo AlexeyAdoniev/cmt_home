@@ -86,7 +86,7 @@ const data = [
 
 let bigData = [];
 
-for (let i = 0; i < 200; i++) {
+for (let i = 0; i < 100; i++) {
 	const item = {
 		id: String(i + 1),
 		1: faker.person.fullName(),
