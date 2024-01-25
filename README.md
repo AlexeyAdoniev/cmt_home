@@ -1,7 +1,11 @@
 git clone https://github.com/AlexeyAdoniev/cmt_home.git
+
 cd cmt_home
+
 yarn install
+
 yarn dev
+
 
 
  - To change number of rendered rows set value in config.js file
