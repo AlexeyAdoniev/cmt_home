@@ -1,7 +1,7 @@
 #root {
 	max-width: 1280px;
 	margin: 0 auto;
-	padding: 2rem;
+
 	text-align: center;
 }
 
@@ -65,6 +65,10 @@ table table tr:last-child {
 table tr td,
 table tr th {
 	/* border-right: 1px solid rgb(114, 113, 113); */
+}
+
+table tr td {
+	height: 32px;
 }
 
 table table tr td,
@@ -147,6 +151,9 @@ th.group-fold {
 
 .group-key-wrapper svg {
 	margin-left: 10px;
+}
+
+.table-container {
 }
 
 @keyframes logo-spin {

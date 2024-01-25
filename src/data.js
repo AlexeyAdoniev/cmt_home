@@ -1,3 +1,5 @@
+import { faker } from '@faker-js/faker';
+
 const columns = [
 	{
 		id: '1',
@@ -82,4 +84,22 @@ const data = [
 	},
 ];
 
-export default { columns, data };
+let bigData = [];
+
+for (let i = 0; i < 200; i++) {
+	const item = {
+		id: String(i + 1),
+		1: faker.person.fullName(),
+		2: faker.number.int({ min: 1985, max: 2014 }),
+		3: faker.datatype.boolean(),
+		4: {
+			selected: faker.number.int({ min: 0, max: 2 }),
+			options: ['Single', 'Married', 'Divorsed'],
+		},
+		5: faker.color.human(),
+		6: faker.number.int({ min: 165, max: 202 }),
+	};
+	bigData.push(item);
+}
+
+export default { columns, data: bigData };

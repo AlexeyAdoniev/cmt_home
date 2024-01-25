@@ -1,12 +1,15 @@
 /* eslint-disable react/prop-types */
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef, useLayoutEffect, memo, useMemo, cloneElement } from 'react';
 import { Checkbox, Select, InputNumber, Input, Flex } from 'antd'
 import { EditOutlined, SaveOutlined, GroupOutlined, UngroupOutlined, CaretUpOutlined, CaretDownOutlined } from '@ant-design/icons'
 import './App.css';
 
 
 import tableData from './data.js'
-import { EMPTY_TABLE } from './config.js';
+import { EMPTY_TABLE, COLUMN_HEIGHT, GROUP_HEADER_HEIGHT } from './config.js';
+
+import { debounce } from './utils.js';
+import { tr } from '@faker-js/faker';
 
 
 //import { isNumeric } from './utils';
@@ -54,6 +57,8 @@ function App() {
 	const [shownRows, setShownRows] = useState(DEFAULT_SHOWN_ROWS);
 	const [searchInput, setSearch] = useState('');
 	const [groups, setGroups] = useState({})
+	//const [container, setContainer] = useState(false)
+
 
 
 
@@ -87,7 +92,7 @@ function App() {
 
 	return (
 		<>
-			<Flex className="select-wrapper" >
+			{/* <Flex className="select-wrapper" >
 				<span>Show fields</span>
 				<Select
 					mode="multiple"
@@ -108,10 +113,12 @@ function App() {
 			<Flex className="search-wrapper" >
 				<span>Search</span>
 				<Input value={searchInput} onChange={e => setSearch(e.target.value)} />
-			</Flex>
+			</Flex> */}
+
 			<Table tableData={tableData} shownColumns={shownColumns} shownRows={shownRows} groups={groups}>
 				<TableHeader columns={columns} shownColumns={shownColumns} groups={groups} setGroups={setGroups} />
 			</Table>
+
 		</>
 	);
 }
@@ -121,19 +128,53 @@ const Table = ({
 	tableData,
 	shownColumns,
 	shownRows,
-	isChild = false,
+	groupKey = undefined,
 	groups = {},
 }) => {
 
 
 	const [table, setTable] = useState(EMPTY_TABLE);
 	const [updateCell, setUpdateCell] = useState('');
-	// const []
+	const [scrollY, setScrollY] = useState(window.scrollY);
+	const [collapse, setColl] = useState(false);
+
 	const { columns, data } = table
 
+
+	const TABLE_BASE = useRef();
+
+
+
+	//const collapsedGroup = typeof collapse !== 'undefined' && collapse === groupKey;
+
 	useEffect(() => {
-		setTable(() => tableData)
-	}, [tableData])
+
+		const scrollHandler = () => {
+			debounce(() => {
+				setScrollY(window.scrollY)
+			}, 50)()
+		}
+		window.addEventListener("scroll", scrollHandler)
+
+
+		setTable(() => {
+			let data = tableData.data;
+			if (collapse) {
+				data = [];
+			}
+			const container = document.querySelector(`.table-container${groupKey ? `-${groupKey}` : ''}`);
+			container.style.height = `${data.length * COLUMN_HEIGHT + (groupKey ? GROUP_HEADER_HEIGHT : 0)}px`
+			const header = container.querySelector('table > thead')?.getBoundingClientRect();
+			TABLE_BASE.current = header.y + header.height;
+			return { ...tableData, data };
+		})
+
+		return () => {
+			console.log('unmount');
+			window.removeEventListener("scroll", scrollHandler)
+		}
+	}, [collapse])
+
 
 
 	// const toggleGroupShow = (group) => {
@@ -211,17 +252,36 @@ const Table = ({
 	}
 
 
+	const Row = ({ row }) => {
+
+		const cells = table.columns.map(({ id: columnId, width }) => {
+			const cellId = `${row.id}-${columnId}`;
+			const hidden = !shownColumns.includes(columnId);
+			const update = updateCell === cellId;
+			return <td width={width} className={`table-cell ${hidden ? 'hidden' : ''}`} key={`cell-${cellId}`}>
+				{update ? renderUpdate(row.id, row, columnId) : renderIdle(row[columnId])}
+				{!groupKey && (update ? <SaveOutlined onClick={() => setUpdateCell('')} /> : <EditOutlined onClick={() => setUpdateCell(cellId)} />)}
+			</td>
+		})
+		//ref={el => rowRefs.current[rowIndex] = el}
+		return <tr >
+			{shownRows.includes(row.id) ? cells : []}
+		</tr>
+	}
+
+
+	//console.log(table.data[0], table.data.at(-1));
 	const renderRows = () => {
 
 		// Group mode recursive call
 		if (groups.column) {
 			const groupKeys = Array.from(new Set(data.map(row => row[groups.column])));
 
-			return groupKeys.map((groupKey, groupIndex) => {
+			return groupKeys.map((key, groupIndex) => {
 
-				const groupData = table.data.filter(row => row[groups.column] === groupKey);
+				const groupData = table.data.filter(row => row[groups.column] === key);
 
-				const Header = () => {
+				const GroupHeader = ({ collapse, setColl }) => {
 
 
 					return <thead className='group-header'>
@@ -234,9 +294,16 @@ const Table = ({
 									width={width}
 								>
 
-									{id === groups.column ? <div className='group-key-wrapper'>{groupKey}<CaretUpOutlined onClick={() => toggleGroupShow(groupIndex)} /></div> : ''}
-
 									<div>{id === '1' ? `${groupData.length}/${data.length}` : ''}</div>
+									{id === groups.column && groups.column !== '1' ? <div className='group-key-wrapper'>{key}
+										{collapse ? <CaretDownOutlined onClick={() => {
+											setColl(false);
+										}} /> : <CaretUpOutlined onClick={() => {
+											setColl(true);
+
+										}} />}
+									</div> : ''}
+
 								</th>
 								)
 							}
@@ -245,45 +312,51 @@ const Table = ({
 					</thead>
 				}
 
+
+
+
+
 				return <tr key={`group-${groupIndex}`}>
 					<td colSpan={columns.length}>
-						<Table tableData={{ columns, data: groupData }} shownColumns={shownColumns} shownRows={shownRows} isChild={true}>
-							<Header />
-						</Table>
+						{<Table tableData={{ columns, data: groupData }} shownColumns={shownColumns} shownRows={shownRows} groupKey={groupIndex + 1} >
+							<GroupHeader />
+						</Table>}
 					</td>
 				</tr>
 			})
 		}
 
 
+
 		return table.data.map((row, rowIndex) => {
 
-			const cells = table.columns.map(({ id: columnId, width }) => {
-				const cellId = `${rowIndex}-${columnId}`;
-				const hidden = !shownColumns.includes(columnId);
-				const update = updateCell === cellId;
-				return <td width={width} className={`table-cell ${hidden ? 'hidden' : ''}`} key={`cell-${cellId}`}>
-					{update ? renderUpdate(row.id, row, columnId) : renderIdle(row[columnId])}
-					{!isChild && (update ? <SaveOutlined onClick={() => setUpdateCell('')} /> : <EditOutlined onClick={() => setUpdateCell(cellId)} />)}
-				</td>
-			})
+
+			const rowYOffset = rowIndex * COLUMN_HEIGHT + TABLE_BASE.current;
+			const topOutOfBonds = rowYOffset < scrollY;
+			const botOutOfBodnds = rowYOffset > scrollY + window.innerHeight + 10;
+			const outOfBounds = botOutOfBodnds || topOutOfBonds;
+			if (!outOfBounds) return <Row key={`row-${row.id}`} row={row} />;
+			if (topOutOfBonds) {
+				return <tr key={`row-${row.id}`}><td></td></tr>
+			} else {
+				return ''
+			}
 
 
-			return <tr key={`row-${rowIndex}`}>
-				{shownRows.includes(row.id) ? cells : []}
-			</tr>
+
 		})
 	}
 
 
 
 
-	return <table >
-		{children}
+	return <div className={`table-container${groupKey ? `-${groupKey}` : ''}`}><table >
+		{cloneElement(children, { setColl, collapse })}
 		<tbody>
-			{renderRows()}
+			{table.data.length > 0 && renderRows()}
 		</tbody>
-	</table>
+	</table></div>
+
 }
 
 export default App;
