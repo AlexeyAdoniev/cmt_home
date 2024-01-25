@@ -9,7 +9,7 @@ export const TableHeader = ({ columns, shownColumns, groups, setGroups }) => <th
 
                 const hidden = !shownColumns.includes(id);
 
-                const groupHandler = () => setGroups({ column: id })
+                const groupHandler = () => setGroups({ column: id, hidden: [] })
                 const ungroupHandler = () => setGroups({})
 
                 return <th

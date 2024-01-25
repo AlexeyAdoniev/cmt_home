@@ -57,6 +57,7 @@ export const Filters = ({ table, groups, shownColumns, setShownColumns, setFiltr
         </Flex>
 
         <Flex className="search-wrapper" >
+            <span>Search</span>
             <Input value={searchInput} onChange={e => setSearch(e.target.value)} />
 
         </Flex>

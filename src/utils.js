@@ -36,7 +36,6 @@ export const fetchTable = (data) => {
 						.objectStore(TABLE_NAME);
 
 					data.forEach((customer) => {
-						console.log(customer);
 						customerObjectStore.add(customer);
 					});
 				};
@@ -92,5 +91,23 @@ export const updateRow = (val) => {
 				reject(e);
 			}
 		};
+	});
+};
+
+export const getGroupKey = (data, groups) => {
+	const first = data[0][groups.column];
+	if (typeof data[0][groups.column] === 'object') {
+		return first.options;
+	}
+	return Array.from(new Set(data.map((row) => row[groups.column])));
+};
+export const getGroupData = (data, groups, key) => {
+	return data.filter((row) => {
+		const x = row[groups.column];
+		if (typeof x === 'object') {
+			return row[groups.column].options[x.selected] === key;
+		} else {
+			return x === key;
+		}
 	});
 };
