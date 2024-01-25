@@ -1,76 +1,38 @@
 /* eslint-disable react/prop-types */
-import { useEffect, useState, useRef, useLayoutEffect, memo, useMemo, cloneElement } from 'react';
-import { Checkbox, Select, InputNumber, Input, Flex, Button } from 'antd'
-import { EditOutlined, SaveOutlined, GroupOutlined, UngroupOutlined, CaretUpOutlined, CaretDownOutlined } from '@ant-design/icons'
+import { useEffect, useState, useRef } from 'react';
+import { CaretUpOutlined, CaretDownOutlined } from '@ant-design/icons'
 import './App.css';
 
 
 import tableData from './data.js'
 import { EMPTY_TABLE, COLUMN_HEIGHT, GROUP_HEADER_HEIGHT } from './config.js';
 
-import { debounce, extractValue, fetchTable, updateRow } from './utils.js';
+import { debounce, fetchTable } from './utils.js';
 
-
-
-//import { isNumeric } from './utils';
-
-
-
-
-const TableHeader = ({ columns, shownColumns, groups, setGroups }) => <thead>
-	<tr>
-		{
-			columns.map(({ id, title, width }, i) => {
-
-				const hidden = !shownColumns.includes(id);
-
-				const groupHandler = () => setGroups({ column: id })
-				const ungroupHandler = () => setGroups({})
-
-				return <th
-					key={`Table-header-${i}`}
-					width={width}
-					className={`table-header ${hidden ? 'hidden' : ''}`}
-
-				>
-					{title}
-					{groups.column === id ?
-
-						<UngroupOutlined onClick={ungroupHandler} />
-						: <GroupOutlined onClick={groupHandler} />}
-
-				</th>
-			})
-		}
-	</tr>
-</thead>
+import { TableHeader } from './components/Header.jsx'
+import { Filters } from './components/Filters.jsx';
+import { Row } from './components/Row.jsx';
 
 
 
 function App() {
 
-
-
 	const [table, setTable] = useState(tableData);
-
-	const { columns, data } = table
-
-	const [shownColumns, setShownColumns] = useState(columns.map(({ id }) => id));
+	const [shownColumns, setShownColumns] = useState(table.columns.map(({ id }) => id));
 	const [filtred, setFiltred] = useState(undefined);
-	const [searchInput, setSearch] = useState('');
 	const [groups, setGroups] = useState({})
 	const [show, setShow] = useState(false);
 
 
+
+	// Fetch data from indexedDB or insert random data
 	useEffect(() => {
 		const tma = setTimeout(() => {
-			// preserve(tableData.data)
-			// setShow
 			fetchTable(tableData.data).then(preserved => {
 				setTable({ ...table, data: preserved });
 				setShow(true)
 			})
-		}, 100)
+		})
 		return () => {
 			clearTimeout(tma)
 		}
@@ -79,65 +41,11 @@ function App() {
 
 
 
-	useEffect(() => {
-		if (searchInput === '') {
-			return void setFiltred(undefined)
-		}
-
-		//const numeric = isNumeric(searchInput);
-
-		const filtred = table.data.filter(row => {
-			let found = false;
-			Object.entries(row).forEach(([key, value]) => {
-				if (key !== 'id' && typeof value === 'string') {
-					const reg = new RegExp(searchInput, 'gi')
-					if (value.match(reg)) {
-						found = true;
-					}
-				}
-			})
-
-			return found
-		})
-
-
-		setFiltred({ ...table, data: filtred })
-		//setShownRows(filtred.map(({ id }) => id));
-
-	}, [searchInput, data])
-
-
-
-
-
 	return (
 		<>
-			<Flex className="select-wrapper" >
-				<span>Show fields</span>
-				<Select
-					mode="multiple"
-					allowClear
-					disabled={Boolean(groups.column)}
-					style={{ minWidth: '200px' }}
-					placeholder="Please select shown fields"
-					value={shownColumns}
-					onChange={(e) => {
-						setShownColumns(e)
-					}}
-					options={columns.map(column => ({
-						label: column.title,
-						value: column.id
-					}))}
-				/>
-			</Flex>
-
-			<Flex className="search-wrapper" >
-				<Input value={searchInput} onChange={e => setSearch(e.target.value)} />
-
-			</Flex>
-
+			<Filters table={table} groups={groups} shownColumns={shownColumns} setShownColumns={setShownColumns} setFiltred={setFiltred} />
 			{show && <Table tableData={filtred || table} shownColumns={shownColumns} groups={groups} setGroups={setGroups}>
-				<TableHeader columns={columns} shownColumns={shownColumns} groups={groups} setGroups={setGroups} />
+				<TableHeader columns={table.columns} shownColumns={shownColumns} groups={groups} setGroups={setGroups} />
 			</Table>}
 
 		</>
@@ -155,8 +63,6 @@ const Table = ({
 
 
 	const [table, setTable] = useState(EMPTY_TABLE);
-
-	const [updateCell, setUpdateCell] = useState('');
 	const [scrollY, setScrollY] = useState(window.scrollY);
 	const { columns, data } = table
 
@@ -164,8 +70,8 @@ const Table = ({
 	const TABLE_BASE = useRef();
 
 
-	useEffect(() => {
 
+	useEffect(() => {
 
 		const scrollHandler = () => {
 			debounce(() => {
@@ -196,111 +102,14 @@ const Table = ({
 
 
 
-	//render idle
-	const renderIdle = (value) => {
-
-		switch (typeof value) {
-			case "object": {
-				return value.options[value.selected]
-			}
-			case 'undefined': {
-				return 'N/A'
-			}
-			default:
-				return String(value)
-		}
-	}
-
-	let inputValue = useRef('')
 
 
 
-	const preserveTable = (rowId, columnId, type) => {
 
-		const value = extractValue[type](inputValue);
-		const idxToEdit = table.data.findIndex(item => item.id === rowId);
-		const newRow = {
-			...table.data[idxToEdit],
-			[columnId]: value
-		};
-		const updated = {
-			...table,
-			data: [
-				...table.data.slice(0, idxToEdit),
-				newRow,
-				...table.data.slice(idxToEdit + 1),
-			]
-		}
-
-		setTable(updated)
-		console.log(rowId, newRow);
-		updateRow(rowId, newRow)
-
-	}
-
-	//render updateable
-	const renderUpdate = (id, row, columnId) => {
-
-		const value = row[columnId];
-
-		switch (typeof value) {
-			case "boolean":
-				return <Checkbox defaultChecked={value} ref={(node) => {
-					inputValue = node
-				}} />
-			case "object": {
-
-				if (typeof value.selected === 'undefined' || !Array.isArray(value.options)) {
-					return 'Wrong data format'
-				}
-				const options = value.options.map(value => ({
-					value,
-					label: value
-				}))
-
-				const seleted = options[value.selected].label;
-
-				return <Select value={seleted} style={{ width: 100 }} options={options} />
-			}
-			case "number": {
-				return <InputNumber defaultValue={value} min={0} ref={(node) => {
-					inputValue = node
-				}} />
-			}
-
-			default:
-				return <Input className='text-input' defaultValue={value} ref={(node) => {
-					inputValue = node
-				}} />
-		}
-
-	}
-
-
-	const Row = ({ row }) => {
-
-		const cells = table.columns.map(({ id: columnId, width, type }) => {
-			const cellId = `${row.id}-${columnId}`;
-			const hidden = !shownColumns.includes(columnId);
-			const update = updateCell === cellId;
-			return <td width={width} className={`table-cell ${hidden ? 'hidden' : ''}`} key={`cell-${cellId}`}>
-				{update ? renderUpdate(row.id, row, columnId) : renderIdle(row[columnId])}
-				{!groupKey && (update ? <SaveOutlined onClick={() => {
-					setUpdateCell('')
-					preserveTable(row.id, columnId, type);
-				}} /> : <EditOutlined onClick={() => setUpdateCell(cellId)} />)}
-			</td>
-		})
-
-		return <tr >
-			{cells}
-		</tr>
-	}
 
 
 
 	const renderRows = () => {
-
 
 		// Group mode recursive call
 		if (groups.column) {
@@ -370,12 +179,7 @@ const Table = ({
 			})
 		}
 
-
-
-
 		return table.data.map((row, rowIndex) => {
-
-
 
 			const rowYOffset = rowIndex * COLUMN_HEIGHT + TABLE_BASE.current;
 
@@ -384,14 +188,12 @@ const Table = ({
 
 			const outOfBounds = botOutOfBodnds || topOutOfBonds;
 
-			if (!outOfBounds) return <Row key={`row-${row.id}`} row={row} />;
+			if (!outOfBounds) return <Row key={`row-${row.id}`} table={table} setTable={setTable} row={row} groupKey={groupKey} shownColumns={shownColumns} />;
 			if (topOutOfBonds) {
 				return <tr key={`row-${row.id}`}><td></td></tr>
 			} else {
 				return ''
 			}
-
-
 
 		})
 	}
@@ -401,7 +203,7 @@ const Table = ({
 
 	return <div className={`table-container${groupKey ? `-${groupKey}` : ''}`}><table >
 		{children}
-		{/* {cloneElement(children, { setColl, collapse })} */}
+
 		<tbody>
 			{renderRows()}
 		</tbody>

@@ -70,7 +70,7 @@ export const fetchTable = (data) => {
 	});
 };
 
-export const updateRow = (id, val) => {
+export const updateRow = (val) => {
 	return new Promise((resolve, reject) => {
 		const request = indexedDB.open(DB_NAME, 2);
 
