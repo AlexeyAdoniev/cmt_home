@@ -38,7 +38,7 @@ export const Filters = ({ table, groups, shownColumns, setShownColumns, setFiltr
     return <>
 
         <Flex className="select-wrapper" >
-            <span>Show fields</span>
+            <span>Show Columns</span>
             <Select
                 mode="multiple"
                 allowClear

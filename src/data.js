@@ -8,6 +8,7 @@ const columns = [
 		title: 'Name',
 		type: 'string',
 		width: 150,
+		disableGroup: true,
 	},
 	{
 		id: '2',

@@ -4,4 +4,4 @@ export const GROUP_HEADER_HEIGHT = 44;
 export const DB_NAME = 'table_storage';
 export const TABLE_NAME = 'customers';
 
-export const GENERATE_ROWS = 200;
+export const GENERATE_ROWS = 2000;

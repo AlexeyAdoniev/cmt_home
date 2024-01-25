@@ -5,12 +5,14 @@ import { GroupOutlined, UngroupOutlined } from '@ant-design/icons'
 export const TableHeader = ({ columns, shownColumns, groups, setGroups }) => <thead>
     <tr>
         {
-            columns.map(({ id, title, width }, i) => {
+            columns.map(({ id, title, width, disableGroup }, i) => {
 
                 const hidden = !shownColumns.includes(id);
 
                 const groupHandler = () => setGroups({ column: id, hidden: [] })
                 const ungroupHandler = () => setGroups({})
+
+
 
                 return <th
                     key={`Table-header-${i}`}
@@ -19,7 +21,7 @@ export const TableHeader = ({ columns, shownColumns, groups, setGroups }) => <th
 
                 >
                     {title}
-                    {groups.column === id ?
+                    {disableGroup ? '' : groups.column === id ?
 
                         <UngroupOutlined onClick={ungroupHandler} />
                         : <GroupOutlined onClick={groupHandler} />}
