@@ -29,6 +29,7 @@ const columns = [
 		ordinalNo: 4,
 		title: 'Status',
 		type: 'object',
+
 		width: 100,
 	},
 	{
@@ -66,3 +67,15 @@ for (let i = 0; i < GENERATE_ROWS; i++) {
 }
 
 export default { columns, data: bigData };
+
+//Optimizations:
+
+//0. When you group by specific column use prep a set of unique values of this column. what is happening is for every set item itters over whole data set and filters it.
+// Much more efficient is to prepare those data chunks by itteration one time and creatung N arrays where N is the size of set.
+//1. Make 'selector' options a column property, not a data property.
+//2. Optimize search be defining searching input type, and filtering only in mathcing columns
+//3. If edited valude are the same as previus just do not do array cloning
+
+//Design
+
+// Column header should be sticky and shown at any scroll position

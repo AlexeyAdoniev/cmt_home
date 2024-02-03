@@ -1,36 +1,35 @@
 /* eslint-disable react/prop-types */
-import { useState, useEffect } from 'react';
 import { Select, Input, Flex } from 'antd'
 
 
-export const Filters = ({ table, groups, shownColumns, setShownColumns, setFiltred }) => {
+export const Filters = ({ table, groups, shownColumns, setShownColumns, searchInput, setSearch }) => {
 
-    const [searchInput, setSearch] = useState('');
+    //const [searchInput, setSearch] = useState('');
     // Filter rows by search input
-    useEffect(() => {
-        if (searchInput === '') {
-            return void setFiltred(undefined)
-        }
+    // useEffect(() => {
+    //     if (searchInput === '') {
+    //         return void setFiltred(undefined)
+    //     }
 
 
-        const filtred = table.data.filter(row => {
-            let found = false;
-            Object.entries(row).forEach(([key, value]) => {
-                if (key !== 'id' && typeof value === 'string') {
-                    const reg = new RegExp(searchInput, 'gi')
-                    if (value.match(reg)) {
-                        found = true;
-                    }
-                }
-            })
+    //     const filtred = table.data.filter(row => {
+    //         let found = false;
+    //         Object.entries(row).forEach(([key, value]) => {
+    //             if (key !== 'id' && typeof value === 'string') {
+    //                 const reg = new RegExp(searchInput, 'gi')
+    //                 if (value.match(reg)) {
+    //                     found = true;
+    //                 }
+    //             }
+    //         })
 
-            return found
-        })
+    //         return found
+    //     })
 
 
-        setFiltred({ ...table, data: filtred })
+    //     setFiltred({ ...table, data: filtred })
 
-    }, [searchInput, table.data])
+    // }, [searchInput, table.data])
 
 
 

@@ -1,5 +1,5 @@
 /* eslint-disable react/prop-types */
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useMemo } from 'react';
 import { CaretUpOutlined, CaretDownOutlined } from '@ant-design/icons'
 import './App.css';
 
@@ -19,11 +19,14 @@ function App() {
 
 	const [table, setTable] = useState(tableData);
 	const [shownColumns, setShownColumns] = useState(table.columns.map(({ id }) => id));
-	const [filtred, setFiltred] = useState(undefined);
 	const [groups, setGroups] = useState({
 
 	})
 	const [show, setShow] = useState(false);
+
+	const [searchInput, setSearch] = useState('');
+
+
 
 
 
@@ -45,8 +48,8 @@ function App() {
 
 	return (
 		<>
-			<Filters table={table} groups={groups} shownColumns={shownColumns} setShownColumns={setShownColumns} setFiltred={setFiltred} />
-			{show && <Table tableData={filtred || table} shownColumns={shownColumns} groups={groups} setGroups={setGroups}>
+			<Filters table={table} groups={groups} shownColumns={shownColumns} setShownColumns={setShownColumns} searchInput={searchInput} setSearch={setSearch} />
+			{show && <Table tableData={table} shownColumns={shownColumns} groups={groups} setGroups={setGroups} searchInput={searchInput}>
 				<TableHeader columns={table.columns} shownColumns={shownColumns} groups={groups} setGroups={setGroups} />
 			</Table>}
 
@@ -57,16 +60,35 @@ function App() {
 const Table = ({
 	children,
 	tableData,
+	searchInput,
 	shownColumns,
 	groupKey = undefined,
 	groups = {},
 	setGroups
 }) => {
 
-
 	const [table, setTable] = useState(EMPTY_TABLE);
 	const [scrollY, setScrollY] = useState(window.scrollY);
 	const { columns, data } = table
+
+	const filtred = useMemo(() => data.filter(row => {
+		let found = false;
+		Object.entries(row).forEach(([key, value]) => {
+			if (key !== 'id' && typeof value === 'string') {
+				const reg = new RegExp(searchInput, 'gi')
+				if (value.match(reg)) {
+					found = true;
+				}
+			}
+		})
+
+		return found
+	}), [data, searchInput]);
+
+
+
+
+
 
 
 	const TABLE_BASE = useRef();
@@ -82,17 +104,14 @@ const Table = ({
 		window.addEventListener("scroll", listener)
 
 
-		setTable(() => {
-			return tableData;
-		})
+		setTable(tableData)
 
 
 		return () => {
-
 			window.removeEventListener("scroll", listener)
 		}
 
-	}, [tableData.data.length])
+	}, [tableData.data])
 
 
 
@@ -100,7 +119,7 @@ const Table = ({
 
 		// Group mode recursive call
 		if (groups.column) {
-			const groupKeys = getGroupKey(data, groups)
+			const groupKeys = getGroupKey(filtred, groups)
 
 			return groupKeys.map((key, groupIndex) => {
 				const childTableIndex = groupIndex + 1;
@@ -173,7 +192,7 @@ const Table = ({
 			})
 		}
 
-		return table.data.map((row, rowIndex) => {
+		return filtred.map((row, rowIndex) => {
 
 			const { outOfBounds, topOutOfBounds } = Virtualizer.outOfBounds(rowIndex, scrollY, COLUMN_HEIGHT, TABLE_BASE, groupKey ? groups : undefined)
 
